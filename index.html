@@ -57,6 +57,7 @@
             }
 
             const words = text.toLowerCase().match(/\b\w+\b/g);
+            const totalWordCount = words.length; // Total word count
             const wordFrequency = {};
 
             words.forEach(word => {
@@ -67,19 +68,26 @@
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 20);
 
-            displayResults(sortedWords);
+            displayResults(sortedWords, totalWordCount);
         }
 
-        function displayResults(sortedWords) {
+        function displayResults(sortedWords, totalWordCount) {
             const resultDiv = document.getElementById('result');
-            let html = '<h2>Top 20 Most Frequent Words</h2>';
-            html += '<table><tr><th>Word</th><th>Frequency</th></tr>';
+            
+            // Display total word count
+            let html = `<h2>Total Word Count: ${totalWordCount}</h2>`;
+            
+            // Display top words with frequency and percentage
+            html += '<h2>Top 20 Most Frequent Words</h2>';
+            html += '<table><tr><th>Word</th><th>Frequency</th><th>Percentage (%)</th></tr>';
 
             sortedWords.forEach(([word, frequency]) => {
-                html += `<tr><td>${word}</td><td>${frequency}</td></tr>`;
+                const percentage = ((frequency / totalWordCount) * 100).toFixed(2); // Calculate percentage
+                html += `<tr><td>${word}</td><td>${frequency}</td><td>${percentage}</td></tr>`;
             });
 
             html += '</table>';
+            
             resultDiv.innerHTML = html;
         }
     </script>
