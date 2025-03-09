@@ -1,0 +1,136 @@
+/* General Styles */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    color: #333;
+    line-height: 1.6;
+}
+
+h1 {
+    text-align: center;
+    color: #4CAF50;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+input[type="file"] {
+    display: block;
+    margin: 20px auto;
+}
+
+button {
+    display: inline-block;
+    margin: 10px 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    color: white;
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+}
+
+button:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
+}
+
+button:active {
+    transform: scale(1);
+}
+
+label {
+    font-size: 16px;
+    margin-left: 10px;
+}
+
+/* Loading Bar */
+#loadingBar {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+#loadingBar div {
+    height: 20px;
+    width: 0%;
+    background-color: #4CAF50;
+}
+
+/* Results Section */
+#result {
+    margin-top: 30px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    text-align: left;
+    padding: 10px 15px;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+td {
+    background-color: #fff;
+}
+
+tr:nth-child(even) td {
+    background-color: #f2f2f2; /* Light gray for alternating rows */
+}
+
+/* Chart Container */
+#chartContainer {
+    width: 100%;
+    height: 400px; /* Fixed height for consistent sizing */
+}
+
+/* Toggle Switch */
+input[type="checkbox"] {
+    display: none; /* Hide default checkbox */
+}
+
+input[type="checkbox"] + label::before {
+    content: '';
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    background-color: #ccc; /* Default toggle background */
+    border-radius: 15px; /* Rounded toggle shape */
+    vertical-align: middle;
+    margin-right: 10px; /* Space between toggle and label text */
+    transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+input[type="checkbox"]:checked + label::before {
+    background-color: #4CAF50; /* Active toggle background */
+}
+
+input[type="checkbox"] + label::after {
+    content: '';
+    display: inline-block;
+    width: 18px; /* Toggle "knob" size */
+    height: 18px; 
+    background-color: white; 
+    border-radius: 50%; 
+    position: relative; 
+    left: -38px; /* Position inside the toggle track */
+    top: -1px; 
+    transition: transform 0.3s ease-in-out; 
+}
+
+input[type="checkbox"]:checked + label::after {
+   transform : translateX(18 px)
+}
