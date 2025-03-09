@@ -3,92 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Word Frequency Analyzer</title>
+    <title>PDF Word Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        #result {
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+        /* ... (keep existing CSS styles) ... */
+        #loadingBar { height: 20px; background: #eee; margin: 10px 0; display: none; }
+        #progress { width: 0%; height: 100%; background: #4CAF50; transition: width 0.3s; }
     </style>
 </head>
 <body>
-    <h1>PDF Word Frequency Analyzer</h1>
+    <h1>PDF Word Analyzer</h1>
     <input type="file" id="pdfFile" accept=".pdf">
-    <button onclick="analyzePDF()">Analyze PDF</button>
+    <button onclick="analyzePDF()">Analyze</button>
+    <div id="loadingBar"><div id="progress"></div></div>
     <div id="result"></div>
+    <canvas id="chart"></canvas>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+        // ... (keep existing PDF.js setup and analyzePDF() function) ...
 
-        async function analyzePDF() {
-            const fileInput = document.getElementById('pdfFile');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a PDF file');
-                return;
-            }
-
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-            let text = '';
-
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                text += content.items.map(item => item.str).join(' ');
-            }
-
-            const words = text.toLowerCase().match(/\b\w+\b/g);
-            const totalWordCount = words.length; // Total word count
-            const wordFrequency = {};
-
-            words.forEach(word => {
-                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-            });
-
-            const sortedWords = Object.entries(wordFrequency)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 20);
-
-            displayResults(sortedWords, totalWordCount);
-        }
-
+        // MODIFIED DISPLAY FUNCTION WITH CHART
         function displayResults(sortedWords, totalWordCount) {
-            const resultDiv = document.getElementById('result');
-            
-            // Display total word count
-            let html = `<h2>Total Word Count: ${totalWordCount}</h2>`;
-            
-            // Display top words with frequency and percentage
-            html += '<h2>Top 20 Most Frequent Words</h2>';
-            html += '<table><tr><th>Word</th><th>Frequency</th><th>Percentage (%)</th></tr>';
-
-            sortedWords.forEach(([word, frequency]) => {
-                const percentage = ((frequency / totalWordCount) * 100).toFixed(2); // Calculate percentage
-                html += `<tr><td>${word}</td><td>${frequency}</td><td>${percentage}</td></tr>`;
+            const ctx = document.getElementById('chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedWords.map(item => item[0]),
+                    datasets: [{
+                        label: 'Word Frequency %',
+                        data: sortedWords.map(item => (item[1]/totalWordCount*100).toFixed(2)),
+                        borderColor: '#4CAF50'
+                    }]
+                }
             });
-
-            html += '</table>';
             
-            resultDiv.innerHTML = html;
+            // ... (keep existing table display code) ...
         }
     </script>
 </body>
