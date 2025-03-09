@@ -3,42 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Word Analyzer</title>
+    <title>PDF Word Frequency Analyzer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ... (keep existing CSS styles) ... */
-        #loadingBar { height: 20px; background: #eee; margin: 10px 0; display: none; }
-        #progress { width: 0%; height: 100%; background: #4CAF50; transition: width 0.3s; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #result, #chartContainer {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        #loadingBar {
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 3px;
+            border-radius: 3px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, .2);
+            display: none;
+        }
+        #loadingBar div {
+            width: 0;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
     </style>
 </head>
 <body>
-    <h1>PDF Word Analyzer</h1>
+    <h1>PDF Word Frequency Analyzer</h1>
     <input type="file" id="pdfFile" accept=".pdf">
-    <button onclick="analyzePDF()">Analyze</button>
-    <div id="loadingBar"><div id="progress"></div></div>
+    <button onclick="analyzePDF()">Analyze PDF</button>
+    <div id="loadingBar"><div></div></div>
     <div id="result"></div>
-    <canvas id="chart"></canvas>
+    <div id="chartContainer">
+        <canvas id="frequencyChart"></canvas>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <script>
-        // ... (keep existing PDF.js setup and analyzePDF() function) ...
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
 
-        // MODIFIED DISPLAY FUNCTION WITH CHART
+        async function analyzePDF() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+
+            showLoadingBar();
+
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            let text = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(' ');
+                updateLoadingBar(i / pdf.numPages * 100);
+            }
+
+            const words = text.toLowerCase().match(/\b\w+\b/g);
+            const totalWordCount = words.length;
+            const wordFrequency = {};
+
+            words.forEach(word => {
+                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+            });
+
+            const sortedWords = Object.entries(wordFrequency)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20);
+
+            hideLoadingBar();
+            displayResults(sortedWords, totalWordCount);
+            createChart(sortedWords, totalWordCount);
+        }
+
+        function showLoadingBar() {
+            document.getElementById('loadingBar').style.display = 'block';
+        }
+
+        function hideLoadingBar() {
+            document.getElementById('loadingBar').style.display = 'none';
+        }
+
+        function updateLoadingBar(percentage) {
+            document.getElementById('loadingBar').firstChild.style.width = percentage + '%';
+        }
+
         function displayResults(sortedWords, totalWordCount) {
-            const ctx = document.getElementById('chart').getContext('2d');
+            const resultDiv = document.getElementById('result');
+            
+            let html = `<h2>Total Word Count: ${totalWordCount}</h2>`;
+            html += '<h2>Top 20 Most Frequent Words</h2>';
+            html += '<table><tr><th>Word</th><th>Frequency</th><th>Percentage (%)</th></tr>';
+
+            sortedWords.forEach(([word, frequency]) => {
+                const percentage = ((frequency / totalWordCount) * 100).toFixed(2);
+                html += `<tr><td>${word}</td><td>${frequency}</td><td>${percentage}</td></tr>`;
+            });
+
+            html += '</table>';
+            resultDiv.innerHTML = html;
+        }
+
+        function createChart(sortedWords, totalWordCount) {
+            const ctx = document.getElementById('frequencyChart').getContext('2d');
+            const labels = sortedWords.map(([word]) => word);
+            const data = sortedWords.map(([, frequency]) => (frequency / totalWordCount) * 100);
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: sortedWords.map(item => item[0]),
+                    labels: labels,
                     datasets: [{
-                        label: 'Word Frequency %',
-                        data: sortedWords.map(item => (item[1]/totalWordCount*100).toFixed(2)),
-                        borderColor: '#4CAF50'
+                        label: 'Word Frequency (%)',
+                        data: data,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
                     }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Frequency (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Words'
+                            }
+                        }
+                    }
                 }
             });
-            
-            // ... (keep existing table display code) ...
         }
     </script>
 </body>
