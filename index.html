@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Word Frequency Analyzer</title>
+    <title>PDF Analyzer - Words and Letters</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -45,9 +45,12 @@
     </style>
 </head>
 <body>
-    <h1>PDF Word Frequency Analyzer</h1>
+    <h1>PDF Word and Letter Frequency Analyzer</h1>
     <input type="file" id="pdfFile" accept=".pdf">
     <button onclick="analyzePDF()">Analyze PDF</button>
+    <button onclick="clearData()">Clear Data</button>
+    <label for="analysisType">Analyze Letters:</label>
+    <input type="checkbox" id="analysisType" onchange="toggleAnalysisType()">
     <div id="loadingBar"><div></div></div>
     <div id="result"></div>
     <div id="chartContainer">
@@ -79,21 +82,25 @@
                 updateLoadingBar(i / pdf.numPages * 100);
             }
 
-            const words = text.toLowerCase().match(/\b\w+\b/g);
-            const totalWordCount = words.length;
-            const wordFrequency = {};
+            const isLetterAnalysis = document.getElementById('analysisType').checked;
+            const items = isLetterAnalysis ? 
+                text.toLowerCase().replace(/[^a-z]/g, '').split('') :
+                text.toLowerCase().match(/\b\w+\b/g);
 
-            words.forEach(word => {
-                wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+            const totalCount = items.length;
+            const frequencyMap = {};
+
+            items.forEach(item => {
+                frequencyMap[item] = (frequencyMap[item] || 0) + 1;
             });
 
-            const sortedWords = Object.entries(wordFrequency)
+            const sortedItems = Object.entries(frequencyMap)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 20);
 
             hideLoadingBar();
-            displayResults(sortedWords, totalWordCount);
-            createChart(sortedWords, totalWordCount);
+            displayResults(sortedItems, totalCount, isLetterAnalysis);
+            createChart(sortedItems, totalCount, isLetterAnalysis);
         }
 
         function showLoadingBar() {
@@ -108,33 +115,50 @@
             document.getElementById('loadingBar').firstChild.style.width = percentage + '%';
         }
 
-        function displayResults(sortedWords, totalWordCount) {
+        function clearData() {
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('frequencyChart').remove();
+            
+            // Create a new canvas element for the chart
+            const newCanvas = document.createElement('canvas');
+            newCanvas.id = 'frequencyChart';
+            
+            // Append the new canvas to the chart container
+            document.getElementById('chartContainer').appendChild(newCanvas);
+        }
+
+        function displayResults(sortedItems, totalCount, isLetterAnalysis) {
             const resultDiv = document.getElementById('result');
             
-            let html = `<h2>Total Word Count: ${totalWordCount}</h2>`;
-            html += '<h2>Top 20 Most Frequent Words</h2>';
-            html += '<table><tr><th>Word</th><th>Frequency</th><th>Percentage (%)</th></tr>';
+            let html = `<h2>Total ${isLetterAnalysis ? 'Letter' : 'Word'} Count: ${totalCount}</h2>`;
+            
+            html += `<h2>Top 20 Most Frequent ${isLetterAnalysis ? 'Letters' : 'Words'}</h2>`;
+            
+            html += `<table><tr><th>${isLetterAnalysis ? 'Letter' : 'Word'}</th><th>Frequency</th><th>Percentage (%)</th></tr>`;
 
-            sortedWords.forEach(([word, frequency]) => {
-                const percentage = ((frequency / totalWordCount) * 100).toFixed(2);
-                html += `<tr><td>${word}</td><td>${frequency}</td><td>${percentage}</td></tr>`;
+            sortedItems.forEach(([item, frequency]) => {
+                const percentage = ((frequency / totalCount) * 100).toFixed(2);
+                html += `<tr><td>${item}</td><td>${frequency}</td><td>${percentage}</td></tr>`;
             });
 
             html += '</table>';
+            
             resultDiv.innerHTML = html;
         }
 
-        function createChart(sortedWords, totalWordCount) {
+        function createChart(sortedItems, totalCount, isLetterAnalysis) {
             const ctx = document.getElementById('frequencyChart').getContext('2d');
-            const labels = sortedWords.map(([word]) => word);
-            const data = sortedWords.map(([, frequency]) => (frequency / totalWordCount) * 100);
+            
+            const labels = sortedItems.map(([item]) => item);
+            
+            const data = sortedItems.map(([, frequency]) => (frequency / totalCount) * 100);
 
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Word Frequency (%)',
+                        label: `${isLetterAnalysis ? 'Letter' : 'Word'} Frequency (%)`,
                         data: data,
                         borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1
@@ -145,20 +169,17 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Frequency (%)'
-                            }
+                            title: { display: true, text: 'Frequency (%)' }
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Words'
-                            }
-                        }
+                        x: { title: { display: true, text: isLetterAnalysis ? 'Letters' : 'Words' } }
                     }
                 }
             });
+        }
+
+        function toggleAnalysisType() {
+          clearData(); // Clear previous results when toggling analysis type
+          alert("Switched analysis mode! Upload a new PDF to analyze.");
         }
     </script>
 </body>
