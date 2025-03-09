@@ -42,6 +42,10 @@
             border-radius: 3px;
             transition: width 0.5s;
         }
+        #chartContainer {
+            width: 100%;
+            height: 400px;
+        }
     </style>
 </head>
 <body>
@@ -60,6 +64,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+        let chart;
 
         async function analyzePDF() {
             const fileInput = document.getElementById('pdfFile');
@@ -83,20 +88,32 @@
             }
 
             const isLetterAnalysis = document.getElementById('analysisType').checked;
-            const items = isLetterAnalysis ? 
-                text.toLowerCase().replace(/[^a-z]/g, '').split('') :
-                text.toLowerCase().match(/\b\w+\b/g);
+            let items, frequencyMap;
+
+            if (isLetterAnalysis) {
+                items = text.toLowerCase().replace(/[^a-z]/g, '').split('');
+                frequencyMap = {};
+                'abcdefghijklmnopqrstuvwxyz'.split('').forEach(letter => {
+                    frequencyMap[letter] = 0;
+                });
+                items.forEach(item => {
+                    frequencyMap[item]++;
+                });
+            } else {
+                items = text.toLowerCase().match(/\b\w+\b/g);
+                frequencyMap = {};
+                items.forEach(item => {
+                    frequencyMap[item] = (frequencyMap[item] || 0) + 1;
+                });
+            }
 
             const totalCount = items.length;
-            const frequencyMap = {};
-
-            items.forEach(item => {
-                frequencyMap[item] = (frequencyMap[item] || 0) + 1;
-            });
-
             const sortedItems = Object.entries(frequencyMap)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 20);
+                .sort((a, b) => b[1] - a[1]);
+
+            if (!isLetterAnalysis) {
+                sortedItems.splice(20); // Keep only top 20 for words
+            }
 
             hideLoadingBar();
             displayResults(sortedItems, totalCount, isLetterAnalysis);
@@ -117,23 +134,16 @@
 
         function clearData() {
             document.getElementById('result').innerHTML = '';
-            document.getElementById('frequencyChart').remove();
-            
-            // Create a new canvas element for the chart
-            const newCanvas = document.createElement('canvas');
-            newCanvas.id = 'frequencyChart';
-            
-            // Append the new canvas to the chart container
-            document.getElementById('chartContainer').appendChild(newCanvas);
+            if (chart) {
+                chart.destroy();
+            }
         }
 
         function displayResults(sortedItems, totalCount, isLetterAnalysis) {
             const resultDiv = document.getElementById('result');
             
             let html = `<h2>Total ${isLetterAnalysis ? 'Letter' : 'Word'} Count: ${totalCount}</h2>`;
-            
-            html += `<h2>Top 20 Most Frequent ${isLetterAnalysis ? 'Letters' : 'Words'}</h2>`;
-            
+            html += `<h2>${isLetterAnalysis ? 'All Letters' : 'Top 20 Words'} Frequency</h2>`;
             html += `<table><tr><th>${isLetterAnalysis ? 'Letter' : 'Word'}</th><th>Frequency</th><th>Percentage (%)</th></tr>`;
 
             sortedItems.forEach(([item, frequency]) => {
@@ -142,30 +152,33 @@
             });
 
             html += '</table>';
-            
             resultDiv.innerHTML = html;
         }
 
         function createChart(sortedItems, totalCount, isLetterAnalysis) {
             const ctx = document.getElementById('frequencyChart').getContext('2d');
-            
             const labels = sortedItems.map(([item]) => item);
-            
             const data = sortedItems.map(([, frequency]) => (frequency / totalCount) * 100);
 
-            new Chart(ctx, {
-                type: 'line',
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: `${isLetterAnalysis ? 'Letter' : 'Word'} Frequency (%)`,
                         data: data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
                         borderColor: 'rgb(75, 192, 192)',
-                        tension: 0.1
+                        borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -178,8 +191,8 @@
         }
 
         function toggleAnalysisType() {
-          clearData(); // Clear previous results when toggling analysis type
-          alert("Switched analysis mode! Upload a new PDF to analyze.");
+            clearData();
+            alert("Switched analysis mode! Upload a new PDF to analyze.");
         }
     </script>
 </body>
